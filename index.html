@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Isadora — Dua Criativa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#080808;--black2:#101010;--black3:#181818;--black4:#222222;--black5:#2a2a2a;
+  --yellow:#F5E642;--yellow2:#DFCE1A;
+  --purple:#7C3AED;
+  --white:#F5F5F0;--gray:#888884;--gray2:#444440;
+  --ok:#22C55E;--ok-d:rgba(34,197,94,.10);
+  --warn:#F59E0B;--warn-d:rgba(245,158,11,.10);
+  --danger:#EF4444;--danger-d:rgba(239,68,68,.10);
+  --info:#60A5FA;--info-d:rgba(96,165,250,.10);
+  --teal:#2DD4BF;--teal-d:rgba(45,212,191,.10);
+  --fd:'Bebas Neue',sans-serif;--fb:'Inter',sans-serif;
+  --br:rgba(255,255,255,.06);--br2:rgba(255,255,255,.14);
+  --r:10px;--g:14px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{background:var(--black);color:var(--white);font-family:var(--fb);min-height:100dvh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 80% 0%,rgba(124,58,237,.07) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 20% 100%,rgba(245,230,66,.04) 0%,transparent 60%);pointer-events:none;z-index:0}
+.page{position:relative;z-index:1;width:100%;max-width:1800px;margin:0 auto;padding:20px 20px 28px}
+
+/* HEADER */
+.hdr{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;padding-bottom:18px;border-bottom:1px solid var(--br);margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo{font-family:var(--fd);font-size:30px;letter-spacing:.04em;line-height:1}
+.logo em{color:var(--yellow);font-style:normal}
+.tag{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);border-left:1px solid var(--gray2);padding-left:10px;line-height:1.5}
+.hdr-mid{display:flex;align-items:center;justify-content:center;gap:12px}
+.avatar{width:38px;height:38px;border-radius:50%;background:rgba(124,58,237,.25);border:1px solid var(--purple);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:16px;color:var(--yellow);flex-shrink:0}
+.user-info .uname{font-size:15px;font-weight:600;color:var(--white)}
+.user-info .urole{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray)}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--fb);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:9px 16px;border-radius:6px;border:none;cursor:pointer;transition:all .18s;white-space:nowrap;text-decoration:none}
+.btn-y{background:var(--yellow);color:var(--black)}
+.btn-y:hover{background:var(--yellow2);transform:translateY(-1px)}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:20px}
+.tab{padding:7px 18px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:1px solid var(--br2);background:none;color:var(--gray);font-family:var(--fb);transition:all .15s}
+.tab.active{background:var(--yellow);border-color:var(--yellow);color:var(--black)}
+.tab:hover:not(.active){border-color:var(--white);color:var(--white)}
+.section{display:none}
+.section.active{display:block}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--g);margin-bottom:var(--g)}
+.sc{background:var(--black2);border:1px solid var(--br);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r) var(--r) 0 0}
+.sc.ok::before{background:var(--ok)}.sc.wn::before{background:var(--warn)}.sc.in::before{background:var(--info)}.sc.br::before{background:var(--yellow)}.sc.rd::before{background:var(--danger)}
+.sn{font-family:var(--fd);font-size:44px;letter-spacing:.02em;line-height:1;margin-bottom:4px}
+.sc.ok .sn{color:var(--ok)}.sc.wn .sn{color:var(--warn)}.sc.in .sn{color:var(--info)}.sc.br .sn{color:var(--yellow)}.sc.rd .sn{color:var(--danger)}
+.sl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);font-weight:500}
+
+/* FILTERS */
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.flbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin-right:4px}
+.fbtn{padding:4px 12px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:1px solid var(--br2);background:none;color:var(--gray);font-family:var(--fb);transition:all .15s}
+.fbtn.active{background:var(--yellow);border-color:var(--yellow);color:var(--black)}
+.fbtn:hover:not(.active){border-color:var(--white);color:var(--white)}
+
+/* WEEK NAV */
+.week-nav-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.wnbtn{background:none;border:1px solid var(--br2);color:var(--gray);font-size:16px;width:30px;height:30px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.wnbtn:hover{background:var(--black3);color:var(--white);border-color:var(--yellow)}
+.wlbl{font-family:var(--fd);font-size:17px;letter-spacing:.06em;color:var(--white);flex:1;text-align:center}
+
+/* WEEK GRID */
+.week-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+.day-col{background:var(--black2);border:1px solid var(--br);border-radius:var(--r);padding:10px 8px;min-height:90px}
+.day-col.today{border-color:var(--yellow)}
+.day-header{text-align:center;margin-bottom:8px}
+.dnum{font-family:var(--fd);font-size:22px;letter-spacing:.02em;color:var(--white);display:block;line-height:1}
+.dname{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
+.today-badge{font-size:9px;background:var(--yellow);color:var(--black);border-radius:10px;padding:1px 6px;font-weight:700;letter-spacing:.04em;display:inline-block;margin-top:2px}
+.task-chip{background:var(--black3);border:1px solid var(--br);border-radius:6px;padding:5px 7px;font-size:10px;color:var(--white);margin-bottom:4px;cursor:pointer;line-height:1.3;transition:border-color .15s;text-decoration:none;display:block}
+.task-chip:hover{border-color:var(--yellow)}
+.chip-pill{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.s-plan{background:var(--info-d);color:var(--info)}
+.s-design{background:var(--warn-d);color:#FCD34D}
+.s-alt{background:var(--danger-d);color:#FCA5A5}
+.s-ag{background:var(--ok-d);color:#86efac}
+.s-done{background:rgba(255,255,255,.05);color:var(--gray)}
+.empty-day{font-size:10px;color:var(--gray2);text-align:center;padding:8px 0}
+
+/* CLIENT GRID */
+.section-eyebrow{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:10px}
+.client-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--g);margin-bottom:20px}
+.client-card{background:var(--black2);border:1px solid var(--br);border-radius:var(--r);padding:14px;transition:border-color .18s}
+.client-card:hover{border-color:var(--br2)}
+.client-name{font-size:11px;font-weight:700;color:var(--yellow);margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase}
+.task-row{font-size:11px;color:var(--gray);padding:5px 0;border-bottom:1px solid var(--br);cursor:pointer;line-height:1.4;transition:color .15s;text-decoration:none;display:block}
+.task-row:last-of-type{border-bottom:none}
+.task-row:hover{color:var(--white)}
+.due{font-size:10px;color:var(--gray2)}
+
+/* VISITAS */
+.cal-title{font-family:var(--fd);font-size:22px;letter-spacing:.04em;color:var(--white);margin-bottom:12px}
+.visita-card{background:var(--black2);border:1px solid rgba(45,212,191,.25);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;transition:border-color .15s;text-decoration:none}
+.visita-card:hover{border-color:var(--teal)}
+.visita-card.high{border-color:rgba(245,158,11,.35)}
+.visita-card.high:hover{border-color:var(--warn)}
+.visita-icon{width:32px;height:32px;border-radius:8px;background:var(--teal-d);border:1px solid rgba(45,212,191,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.visita-card.high .visita-icon{background:var(--warn-d);border-color:rgba(245,158,11,.3)}
+.visita-icon svg{width:14px;height:14px;fill:var(--teal)}
+.visita-card.high .visita-icon svg{fill:var(--warn)}
+.vi-client{font-size:12px;font-weight:700;color:var(--white);letter-spacing:.04em;text-transform:uppercase}
+.vi-task{font-size:11px;color:var(--gray);margin-top:3px;line-height:1.4}
+.vi-due{font-size:10px;color:var(--gray2);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+
+/* FOOTER */
+.footer{margin-top:22px;padding-top:14px;border-top:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:10px;letter-spacing:.04em;color:var(--gray2)}
+
+/* RESPONSIVE */
+@media(max-width:960px){
+  .week-grid{grid-template-columns:repeat(3,1fr)}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .hdr{grid-template-columns:auto auto}
+  .hdr-mid{display:none}
+}
+@media(max-width:600px){
+  .page{padding:14px 14px 24px}
+  :root{--g:10px}
+  .hdr{grid-template-columns:1fr auto;margin-bottom:14px}
+  .tag{display:none}
+  .logo{font-size:24px}
+  .btn{padding:8px 12px;font-size:10px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .sc{padding:12px 14px}
+  .sn{font-size:34px}
+  .week-grid{grid-template-columns:repeat(2,1fr)}
+  .client-grid{grid-template-columns:1fr}
+}
+@media(min-width:1600px){
+  .page{padding:28px 48px 36px}
+  :root{--g:18px}
+  .logo{font-size:36px}
+  .sn{font-size:52px}
+  .sc{padding:20px 24px}
+  .client-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+}
+</style>
+</head>
+<body>
+<main class="page">
+
+<header class="hdr">
+  <div class="brand">
+    <div class="logo">DUA<em>.</em></div>
+    <div class="tag">Marketing<br>de Moda</div>
+  </div>
+  <div class="hdr-mid">
+    <div class="avatar">IC</div>
+    <div class="user-info">
+      <div class="uname">Isadora Coelho</div>
+      <div class="urole">Conteudista &amp; Social Media</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="btn btn-y" onclick="location.reload()">Atualizar</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('criacao',this)">Criação</button>
+  <button class="tab" onclick="switchTab('audiovisual',this)">Audiovisual &amp; Visitas</button>
+</div>
+
+<!-- CRIAÇÃO -->
+<div id="criacao" class="section active">
+  <div class="stats" id="stats-area"></div>
+  <div class="filter-row">
+    <span class="flbl">Filtrar:</span>
+    <button class="fbtn active" onclick="filterTasks('todos',this)">Todos</button>
+    <button class="fbtn" onclick="filterTasks('planejamento',this)">Planejamento</button>
+    <button class="fbtn" onclick="filterTasks('design',this)">Design</button>
+    <button class="fbtn" onclick="filterTasks('alterações',this)">Em alterações</button>
+    <button class="fbtn" onclick="filterTasks('agendamento',this)">Agendamento</button>
+  </div>
+  <div class="week-nav-row">
+    <button class="wnbtn" onclick="prevWeek()">&#8249;</button>
+    <div class="wlbl" id="week-label"></div>
+    <button class="wnbtn" onclick="nextWeek()">&#8250;</button>
+  </div>
+  <div class="week-grid" id="week-grid"></div>
+  <div class="section-eyebrow">Por cliente</div>
+  <div class="client-grid" id="client-grid"></div>
+</div>
+
+<!-- AUDIOVISUAL -->
+<div id="audiovisual" class="section">
+  <div style="margin-bottom:20px">
+    <div class="cal-title">Visitas e Captações</div>
+    <div id="visitas-list"></div>
+  </div>
+  <div class="section-eyebrow">Outras demandas audiovisual</div>
+  <div class="client-grid" id="av-grid"></div>
+</div>
+
+<footer class="footer">
+  <span>Dua Criativa &copy; 2026 &mdash; Isadora Coelho Cosmo</span>
+</footer>
+
+</main>
+<script>
+const criacao = [
+  {name:"Demanda extra - [ANDIRÁ] - [BANNER SITE VESTI]",status:"design",url:"https://app.clickup.com/t/86ah0uyk6",priority:"normal",due:1777014000000,list:"Andirá Jeans"},
+  {name:"Stories - [JENNI PINK] - [22/04 a 28/04]",status:"planejamento",url:"https://app.clickup.com/t/86agz81nu",priority:"normal",due:1777014000000,list:"Jenni Pink"},
+  {name:"Stories - [DOCE CAJU] - [22/04 a 28/04]",status:"design",url:"https://app.clickup.com/t/86agz81n9",priority:"normal",due:1777014000000,list:"Doce Caju"},
+  {name:"Stories - [ANDIRÁ JEANS] - [22/04 a 28/04]",status:"planejamento",url:"https://app.clickup.com/t/86agz81me",priority:"normal",due:1777014000000,list:"Andirá Jeans"},
+  {name:"Stories - [ELOAH] - [22/04 a 28/04]",status:"design",url:"https://app.clickup.com/t/86agz81m6",priority:"normal",due:1777014000000,list:"Eloah"},
+  {name:"Para trabalhar na semana - Andirá Jeans",status:"planejamento",url:"https://app.clickup.com/t/86agwuuac",priority:"normal",due:1777014000000,list:"Andirá Jeans"},
+  {name:"Demanda extra - [ANDIRÁ] - [VAGA VENDEDOR]",status:"agendamento",url:"https://app.clickup.com/t/86agwrdjr",priority:null,due:1777014000000,list:"Andirá Jeans"},
+  {name:"Demanda extra - [ANDIRÁ] - [LOGO ICONIC]",status:"agendamento",url:"https://app.clickup.com/t/86agzmva9",priority:"normal",due:1776668400000,list:"Andirá Jeans"},
+  {name:"Demanda extra - Eloah - Combo 3 por R$120 Paetê Forrado",status:"agendamento",url:"https://app.clickup.com/t/86agymthx",priority:null,due:1776409200000,list:"Eloah"},
+  {name:"Demanda extra - [ANDIRÁ] - aviso feriado",status:"agendamento",url:"https://app.clickup.com/t/86agy0ta7",priority:"high",due:1776409200000,list:"Andirá Jeans"},
+  {name:"Demanda extra - Andirá Jeans - Redesign Catálogo Atacado",status:"agendamento",url:"https://app.clickup.com/t/86agxkz8n",priority:"normal",due:1776409200000,list:"Andirá Jeans"},
+  {name:"Demanda extra - [AYA] - [Banner combo Day]",status:"agendamento",url:"https://app.clickup.com/t/86agwwgtp",priority:"normal",due:1776409200000,list:"AYA - Fitness"},
+  {name:"Demanda extra - [AYA] - [artes]",status:"agendamento",url:"https://app.clickup.com/t/86agkpchn",priority:null,due:1776322800000,list:"AYA - Fitness"},
+  {name:"Demanda extra - Sun Liv - Influenciadoras regionais",status:"planejamento",url:"https://app.clickup.com/t/86agffq29",priority:"normal",due:1776322800000,list:"Sun Liv"},
+  {name:"Feed - [ANDIRÁ] - 15/04",status:"agendamento",url:"https://app.clickup.com/t/86agx8hjr",priority:null,due:1776236400000,list:"Andirá Jeans"},
+  {name:"Feed - [AYA] - [15 a 29 de abril]",status:"agendamento",url:"https://app.clickup.com/t/86agww3hg",priority:"normal",due:1776236400000,list:"AYA - Fitness"},
+  {name:"Stories - [ANDIRÁ] - [18/04 e 19/04]",status:"agendamento",url:"https://app.clickup.com/t/86agwr6jt",priority:null,due:1776236400000,list:"Andirá Jeans"},
+  {name:"Stories - [AYA] - [16/04 a 20/04]",status:"agendamento",url:"https://app.clickup.com/t/86agwr032",priority:null,due:1776236400000,list:"AYA - Fitness"},
+  {name:"Demanda extra - [AYA] - [SITE ABERTO]",status:"agendamento",url:"https://app.clickup.com/t/86agvzm53",priority:"urgent",due:1776150000000,list:"AYA - Fitness"},
+  {name:"Stories - [Aya Fitness] - [7 a 14 de abril]",status:"agendamento",url:"https://app.clickup.com/t/86agp2zpr",priority:"normal",due:1775804400000,list:"AYA - Fitness"}
+];
+
+const audiovisual = [
+  {name:"CAPTAÇÃO + ADS - [FLORA MINHA] - [CAPTAÇÃO LOJA]",status:"planejamento",url:"https://app.clickup.com/t/86ah1xdt3",priority:"normal",due:1777359600000,isVisita:true},
+  {name:"Editorial - [TCHU.BI] - [CAMPANHA DIA DAS MAES - ROTEIRO 2]",status:"planejamento",url:"https://app.clickup.com/t/86ah1xavp",priority:"normal",due:1777273200000,isVisita:true},
+  {name:"Captação + Ads - [ELOAH] - [CONTEUDO IRANDRA E FABRICA]",status:"planejamento",url:"https://app.clickup.com/t/86ah1x8kj",priority:"high",due:1777014000000,isVisita:true},
+  {name:"Captação + Ads - [NAROMO] - [VISITA FABRICA PARA GERAR CONTEUDO]",status:"planejamento",url:"https://app.clickup.com/t/86ah1x661",priority:"normal",due:1776927600000,isVisita:true},
+  {name:"Editorial - [NAROMO] - [CONTEUDO PARA INSTAGRAM]",status:"para aprovação",url:"https://app.clickup.com/t/86agc961p",priority:"normal",due:1774508400000,isVisita:false},
+  {name:"Captação + Ads - [NAROMO] - [VISITA FABRICA 26/03]",status:"em alterações",url:"https://app.clickup.com/t/86agay15r",priority:"normal",due:null,isVisita:false}
+];
+
+let currentFilter = 'todos';
+let weekOffset = 0;
+
+function statusClass(s) {
+  if (!s) return 's-done';
+  if (s.includes('plan')) return 's-plan';
+  if (s.includes('design')) return 's-design';
+  if (s.includes('alter') || s.includes('aprova')) return 's-alt';
+  if (s.includes('agend')) return 's-ag';
+  return 's-done';
+}
+
+function statusLabel(s) {
+  if (!s) return '-';
+  if (s.includes('plan')) return 'planejamento';
+  if (s.includes('design')) return 'design';
+  if (s.includes('alter')) return 'alterações';
+  if (s.includes('agend')) return 'agendamento';
+  if (s.includes('aprova')) return 'em aprovação';
+  return s;
+}
+
+function fmtDate(ms) {
+  if (!ms) return '';
+  return new Date(ms).toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
+}
+
+function getWeekDates(offset) {
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((day === 0 ? 7 : day) - 1) + (offset * 7));
+  monday.setHours(0, 0, 0, 0);
+  const days = [];
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(d);
+  }
+  return days;
+}
+
+function renderStats() {
+  const plan = criacao.filter(t => t.status && t.status.includes('plan')).length;
+  const design = criacao.filter(t => t.status && t.status.includes('design')).length;
+  const urgent = criacao.filter(t => t.priority === 'urgent').length;
+  document.getElementById('stats-area').innerHTML =
+    '<div class="sc br"><div class="sn">' + criacao.length + '</div><div class="sl">Total</div></div>' +
+    '<div class="sc in"><div class="sn">' + plan + '</div><div class="sl">Planejamento</div></div>' +
+    '<div class="sc wn"><div class="sn">' + design + '</div><div class="sl">Em design</div></div>' +
+    '<div class="sc rd"><div class="sn">' + urgent + '</div><div class="sl">Urgentes</div></div>';
+}
+
+function renderWeek() {
+  const days = getWeekDates(weekOffset);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const opts = {day:'2-digit', month:'short'};
+  document.getElementById('week-label').textContent =
+    days[0].toLocaleDateString('pt-BR', opts).toUpperCase() + ' → ' +
+    days[4].toLocaleDateString('pt-BR', opts).toUpperCase();
+
+  const filtered = criacao.filter(t =>
+    currentFilter === 'todos' || (t.status && t.status.includes(currentFilter))
+  );
+
+  const grid = document.getElementById('week-grid');
+  grid.innerHTML = '';
+  ['SEG','TER','QUA','QUI','SEX'].forEach(function(dn, i) {
+    const d = days[i];
+    const isToday = d.getTime() === today.getTime();
+    const dayTasks = filtered.filter(t => t.due && t.due >= d.getTime() && t.due <= d.getTime() + 86399999);
+    const col = document.createElement('div');
+    col.className = 'day-col' + (isToday ? ' today' : '');
+    let html = '<div class="day-header"><span class="dnum">' + d.getDate() + '</span><span class="dname">' + dn + '</span>' +
+      (isToday ? '<br><span class="today-badge">HOJE</span>' : '') + '</div>';
+    if (!dayTasks.length) {
+      html += '<div class="empty-day">—</div>';
+    } else {
+      dayTasks.forEach(function(t) {
+        const name = t.name.replace(/\[.*?\]/g, '').replace(/📝/g, '').trim().slice(0, 40);
+        html += '<a class="task-chip" href="' + t.url + '" target="_blank" rel="noopener">' +
+          '<div>' + name + '</div>' +
+          '<div style="margin-top:3px"><span class="chip-pill ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span></div>' +
+          '</a>';
+      });
+    }
+    col.innerHTML = html;
+    grid.appendChild(col);
+  });
+}
+
+function renderClientGrid() {
+  const filtered = criacao.filter(t =>
+    currentFilter === 'todos' || (t.status && t.status.includes(currentFilter))
+  );
+  const byClient = {};
+  filtered.forEach(function(t) {
+    if (!byClient[t.list]) byClient[t.list] = [];
+    byClient[t.list].push(t);
+  });
+  const grid = document.getElementById('client-grid');
+  grid.innerHTML = '';
+  if (!Object.keys(byClient).length) {
+    grid.innerHTML = '<div style="font-size:11px;color:var(--gray);padding:1rem;">Nenhuma tarefa para este filtro.</div>';
+    return;
+  }
+  Object.entries(byClient).sort(function(a, b) { return a[0].localeCompare(b[0]); }).forEach(function(entry) {
+    const client = entry[0], tasks = entry[1];
+    const card = document.createElement('div');
+    card.className = 'client-card';
+    let html = '<div class="client-name">' + client + '</div>';
+    tasks.slice(0, 5).forEach(function(t) {
+      const name = t.name.replace(/\[.*?\]/g, '').replace(/📝/g, '').trim().slice(0, 45);
+      html += '<a class="task-row" href="' + t.url + '" target="_blank" rel="noopener">' +
+        '<div>' + name + '</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">' +
+        '<span class="chip-pill ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span>' +
+        '<span class="due">' + fmtDate(t.due) + '</span></div></a>';
+    });
+    if (tasks.length > 5) html += '<div style="font-size:10px;color:var(--gray2);padding-top:4px">+' + (tasks.length - 5) + ' mais</div>';
+    card.innerHTML = html;
+    grid.appendChild(card);
+  });
+}
+
+function renderAudiovisual() {
+  const visitas = audiovisual.filter(t => t.isVisita).sort(function(a, b) { return (a.due || 0) - (b.due || 0); });
+  const outros = audiovisual.filter(t => !t.isVisita);
+
+  const vl = document.getElementById('visitas-list');
+  vl.innerHTML = '';
+  if (!visitas.length) {
+    vl.innerHTML = '<div style="font-size:11px;color:var(--gray)">Nenhuma visita registrada.</div>';
+  } else {
+    visitas.forEach(function(t) {
+      const client = (t.name.match(/\[(.*?)\]/) || [])[1] || '';
+      const cleanName = t.name.replace(/\[.*?\]/g, '').replace(/📝/g, '').trim();
+      const isHigh = t.priority === 'high' || t.priority === 'urgent';
+      vl.innerHTML +=
+        '<a class="visita-card' + (isHigh ? ' high' : '') + '" href="' + t.url + '" target="_blank" rel="noopener">' +
+        '<div class="visita-icon"><svg viewBox="0 0 16 16"><path d="M8 0C5.2 0 3 2.2 3 5c0 4 5 11 5 11s5-7 5-11c0-2.8-2.2-5-5-5zm0 7c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg></div>' +
+        '<div><div class="vi-client">' + client + '</div>' +
+        '<div class="vi-task">' + cleanName + '</div>' +
+        '<div class="vi-due">' + (t.due ? 'Prazo: ' + fmtDate(t.due) : 'Sem prazo definido') +
+        ' <span class="chip-pill s-plan">' + statusLabel(t.status) + '</span>' +
+        (isHigh ? ' <span class="chip-pill s-alt">alta prioridade</span>' : '') +
+        '</div></div></a>';
+    });
+  }
+
+  const avGrid = document.getElementById('av-grid');
+  avGrid.innerHTML = '';
+  if (outros.length) {
+    const card = document.createElement('div');
+    card.className = 'client-card';
+    let html = '<div class="client-name">Em andamento</div>';
+    outros.forEach(function(t) {
+      const name = t.name.replace(/📝/g, '').trim().slice(0, 50);
+      html += '<a class="task-row" href="' + t.url + '" target="_blank" rel="noopener">' +
+        '<div>' + name + '</div>' +
+        '<div style="margin-top:2px"><span class="chip-pill ' + statusClass(t.status) + '">' + statusLabel(t.status) + '</span></div>' +
+        '</a>';
+    });
+    card.innerHTML = html;
+    avGrid.appendChild(card);
+  }
+}
+
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById(tab).classList.add('active');
+}
+
+function filterTasks(f, el) {
+  document.querySelectorAll('.fbtn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+  currentFilter = f;
+  renderWeek();
+  renderClientGrid();
+}
+
+function prevWeek() { weekOffset--; renderWeek(); }
+function nextWeek() { weekOffset++; renderWeek(); }
+
+renderStats();
+renderWeek();
+renderClientGrid();
+renderAudiovisual();
+</script>
+</body>
+</html>
