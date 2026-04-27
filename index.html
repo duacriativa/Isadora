@@ -35,9 +35,24 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 .uname{font-size:15px;font-weight:600;color:var(--white)}
 .urole{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray)}
 .hdr-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--fb);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:9px 16px;border-radius:6px;border:none;cursor:pointer;transition:all .18s;white-space:nowrap;text-decoration:none}
+.btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--fb);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:9px 16px;border-radius:6px;border:none;cursor:pointer;transition:all .18s;white-space:nowrap}
 .btn-y{background:var(--yellow);color:var(--black)}
 .btn-y:hover{background:var(--yellow2);transform:translateY(-1px)}
+.btn-y:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-ghost{background:none;border:1px solid var(--br2);color:var(--gray)}
+.btn-ghost:hover{border-color:var(--white);color:var(--white)}
+
+/* CONFIG BOX */
+.cfg{display:flex;gap:14px;align-items:flex-start;background:var(--black3);border:1px solid rgba(245,230,66,.25);border-radius:var(--r);padding:18px 20px;margin-bottom:20px}
+.cfg-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+.cfg-body{flex:1;min-width:0}
+.cfg-title{font-size:13px;font-weight:600;color:var(--yellow);margin-bottom:4px}
+.cfg-desc{font-size:11px;color:var(--gray);line-height:1.6;margin-bottom:10px}
+.irow{display:flex;gap:8px}
+.ifield{flex:1;min-width:0;background:var(--black4);border:1px solid var(--gray2);border-radius:6px;color:var(--white);font-family:var(--fb);font-size:12px;padding:8px 12px;outline:none;transition:border-color .18s}
+.ifield:focus{border-color:var(--yellow)}
+.ifield::placeholder{color:var(--gray2)}
+
 .tabs{display:flex;gap:4px;margin-bottom:20px}
 .tab{padding:7px 18px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:1px solid var(--br2);background:none;color:var(--gray);font-family:var(--fb);transition:all .15s}
 .tab.active{background:var(--yellow);border-color:var(--yellow);color:var(--black)}
@@ -96,6 +111,11 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 .vi-client{font-size:12px;font-weight:700;color:var(--white);letter-spacing:.04em;text-transform:uppercase}
 .vi-task{font-size:11px;color:var(--gray);margin-top:3px;line-height:1.4}
 .vi-due{font-size:10px;color:var(--gray2);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:14px}
+.spin{width:32px;height:32px;border:2.5px solid var(--black4);border-top-color:var(--yellow);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ltxt{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
+.errbox{background:var(--danger-d);border:1px solid rgba(239,68,68,.25);border-radius:var(--r);padding:12px 16px;font-size:12px;color:#FCA5A5;margin-bottom:18px;display:none}
 .footer{margin-top:22px;padding-top:14px;border-top:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:10px;letter-spacing:.04em;color:var(--gray2)}
 .pdot{display:inline-block;width:5px;height:5px;background:var(--ok);border-radius:50%;margin-right:5px;vertical-align:middle;animation:pa 2s ease infinite}
 @keyframes pa{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
@@ -106,6 +126,7 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
 </head>
 <body>
 <main class="page">
+
 <header class="hdr">
   <div class="brand">
     <div class="logo">DUA<em>.</em></div>
@@ -119,220 +140,332 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
     </div>
   </div>
   <div class="hdr-right">
-    <button class="btn btn-y" onclick="location.reload()">Atualizar</button>
+    <button class="btn btn-ghost" onclick="showCfg()" title="Configurar token">🔑</button>
+    <button class="btn btn-y" id="btn-ref" onclick="loadAll()" disabled>Atualizar</button>
   </div>
 </header>
 
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('criacao',this)">Criação</button>
-  <button class="tab" onclick="switchTab('audiovisual',this)">Audiovisual &amp; Visitas</button>
+<!-- CONFIG BOX -->
+<div class="cfg" id="cfg">
+  <div class="cfg-icon">🔑</div>
+  <div class="cfg-body">
+    <div class="cfg-title">Configure o ClickUp</div>
+    <div class="cfg-desc">Cole seu API Token abaixo. Ele fica salvo só no seu navegador.<br>Encontre em: <strong>ClickUp → Foto do perfil → Apps → API Token</strong></div>
+    <div class="irow">
+      <input class="ifield" id="api-in" type="password" placeholder="pk_...">
+      <button class="btn btn-y" onclick="saveKey()">Salvar e conectar</button>
+      <button class="btn btn-ghost" onclick="hideCfg()">Cancelar</button>
+    </div>
+  </div>
 </div>
 
-<div id="criacao" class="section active">
-  <div class="stats">
-    <div class="sc br"><div class="sn" id="s-total">—</div><div class="sl">Total</div></div>
-    <div class="sc in"><div class="sn" id="s-plan">—</div><div class="sl">Planejamento</div></div>
-    <div class="sc wn"><div class="sn" id="s-design">—</div><div class="sl">Em design</div></div>
-    <div class="sc rd"><div class="sn" id="s-urgent">—</div><div class="sl">Urgentes</div></div>
-  </div>
-  <div class="filter-row">
-    <span class="flbl">Filtrar:</span>
-    <button class="fbtn active" onclick="setFilter('todos',this)">Todos</button>
-    <button class="fbtn" onclick="setFilter('planejamento',this)">Planejamento</button>
-    <button class="fbtn" onclick="setFilter('design',this)">Design</button>
-    <button class="fbtn" onclick="setFilter('alterações',this)">Em alterações</button>
-    <button class="fbtn" onclick="setFilter('agendamento',this)">Agendamento</button>
-  </div>
-  <div class="week-nav-row">
-    <button class="wnbtn" onclick="prevWeek()">&#8249;</button>
-    <div class="wlbl" id="week-label"></div>
-    <button class="wnbtn" onclick="nextWeek()">&#8250;</button>
-  </div>
-  <div class="week-grid" id="week-grid"></div>
-  <div class="section-eyebrow">Por cliente</div>
-  <div class="client-grid" id="client-grid"></div>
+<div id="errbox" class="errbox"></div>
+
+<div id="loadbox" class="loading" style="display:none">
+  <div class="spin"></div>
+  <div class="ltxt" id="load-txt">Buscando demandas…</div>
 </div>
 
-<div id="audiovisual" class="section">
-  <div style="margin-bottom:20px">
-    <div class="cal-title">Visitas e Captações</div>
-    <div id="visitas-list"></div>
+<div id="dash" style="display:none">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('criacao',this)">Criação</button>
+    <button class="tab" onclick="switchTab('audiovisual',this)">Audiovisual &amp; Visitas</button>
   </div>
-  <div class="section-eyebrow">Outras demandas audiovisual</div>
-  <div class="client-grid" id="av-grid"></div>
+
+  <div id="criacao" class="section active">
+    <div class="stats">
+      <div class="sc br"><div class="sn" id="s-total">—</div><div class="sl">Total</div></div>
+      <div class="sc in"><div class="sn" id="s-plan">—</div><div class="sl">Planejamento</div></div>
+      <div class="sc wn"><div class="sn" id="s-design">—</div><div class="sl">Em design</div></div>
+      <div class="sc rd"><div class="sn" id="s-urgent">—</div><div class="sl">Urgentes</div></div>
+    </div>
+    <div class="filter-row">
+      <span class="flbl">Filtrar:</span>
+      <button class="fbtn active" onclick="setFilter('todos',this)">Todos</button>
+      <button class="fbtn" onclick="setFilter('planejamento',this)">Planejamento</button>
+      <button class="fbtn" onclick="setFilter('design',this)">Design</button>
+      <button class="fbtn" onclick="setFilter('alterações',this)">Em alterações</button>
+      <button class="fbtn" onclick="setFilter('agendamento',this)">Agendamento</button>
+    </div>
+    <div class="week-nav-row">
+      <button class="wnbtn" onclick="prevWeek()">&#8249;</button>
+      <div class="wlbl" id="week-label"></div>
+      <button class="wnbtn" onclick="nextWeek()">&#8250;</button>
+    </div>
+    <div class="week-grid" id="week-grid"></div>
+    <div class="section-eyebrow">Por cliente</div>
+    <div class="client-grid" id="client-grid"></div>
+  </div>
+
+  <div id="audiovisual" class="section">
+    <div style="margin-bottom:20px">
+      <div class="cal-title">Visitas e Captações</div>
+      <div id="visitas-list"></div>
+    </div>
+    <div class="section-eyebrow">Outras demandas audiovisual</div>
+    <div class="client-grid" id="av-grid"></div>
+  </div>
 </div>
 
 <footer class="footer">
   <span><span class="pdot"></span>Dua Criativa &copy; 2026 &mdash; Isadora Coelho Cosmo</span>
-  <span>Atualizado em 23/04/2026</span>
+  <span id="last-update"></span>
 </footer>
+
 </main>
 <script>
-// Segunda-feira da semana atual
-function getThisMonday(){
-  var now=new Date(),day=now.getDay(),m=new Date(now);
-  m.setDate(now.getDate()-((day===0?7:day)-1));
+const ISADORA_ID   = '112051789';
+const FOLDER_CRIACAO = '901316459074';
+const FOLDER_AV      = '901316459013';
+const DONE_STATUS    = ['concluído','concluido','aprovado','templates','complete','done'];
+const VISITA_KW      = ['visita','captação','captacao','editorial','roteiro','shooting'];
+
+let key            = localStorage.getItem('isa_token') || '';
+let criacaoTasks   = [];
+let avTasks        = [];
+let currentFilter  = 'todos';
+let weekOffset     = 0;
+
+/* ─── INIT ─── */
+window.addEventListener('DOMContentLoaded', function() {
+  if (key) {
+    document.getElementById('api-in').value = key;
+    document.getElementById('cfg').style.display = 'none';
+    document.getElementById('btn-ref').disabled = false;
+    loadAll();
+  }
+});
+
+function saveKey() {
+  var v = document.getElementById('api-in').value.trim();
+  if (!v) return;
+  key = v;
+  localStorage.setItem('isa_token', v);
+  document.getElementById('cfg').style.display = 'none';
+  document.getElementById('btn-ref').disabled = false;
+  loadAll();
+}
+
+function showCfg() { document.getElementById('cfg').style.display = 'flex'; }
+function hideCfg() { if (key) document.getElementById('cfg').style.display = 'none'; }
+
+/* ─── API ─── */
+async function api(path) {
+  var r = await fetch('https://api.clickup.com/api/v2' + path, { headers: { Authorization: key } });
+  if (!r.ok) throw new Error('Erro ' + r.status);
+  return r.json();
+}
+
+async function fetchFolder(folderId) {
+  var all = [], page = 0;
+  while (true) {
+    var data = await api('/folder/' + folderId + '/task?assignees[]=' + ISADORA_ID + '&include_closed=false&subtasks=false&order_by=due_date&page=' + page);
+    all = all.concat(data.tasks || []);
+    if (data.last_page) break;
+    page++;
+  }
+  return all;
+}
+
+/* ─── LOAD ─── */
+async function loadAll() {
+  if (!key) return;
+  var btn = document.getElementById('btn-ref');
+  btn.disabled = true; btn.textContent = 'Aguarde…';
+  document.getElementById('errbox').style.display = 'none';
+  document.getElementById('loadbox').style.display = 'flex';
+  document.getElementById('dash').style.display = 'none';
+
+  try {
+    var results = await Promise.all([fetchFolder(FOLDER_CRIACAO), fetchFolder(FOLDER_AV)]);
+    var thisMonday = getThisMonday();
+
+    criacaoTasks = results[0].filter(function(t) {
+      var s = t.status.status;
+      if (DONE_STATUS.includes(s)) return false;
+      if (s === 'agendamento' && t.due_date && parseInt(t.due_date) < thisMonday) return false;
+      return true;
+    }).map(normalize);
+
+    avTasks = results[1].filter(function(t) {
+      return !DONE_STATUS.includes(t.status.status);
+    }).map(normalize);
+
+    renderStats();
+    renderWeek();
+    renderClients();
+    renderAV();
+
+    document.getElementById('loadbox').style.display = 'none';
+    document.getElementById('dash').style.display = 'block';
+    document.getElementById('last-update').textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+
+  } catch(e) {
+    document.getElementById('loadbox').style.display = 'none';
+    var eb = document.getElementById('errbox');
+    eb.style.display = 'block';
+    eb.textContent = 'Erro ao carregar: ' + e.message + ' — Verifique seu token.';
+  }
+
+  btn.disabled = false; btn.textContent = 'Atualizar';
+}
+
+function normalize(t) {
+  return {
+    name: t.name,
+    status: t.status.status,
+    url: t.url,
+    priority: t.priority ? t.priority.priority : null,
+    due: t.due_date ? parseInt(t.due_date) : null,
+    list: t.list.name
+  };
+}
+
+/* ─── HELPERS ─── */
+function getThisMonday() {
+  var now = new Date(), day = now.getDay(), m = new Date(now);
+  m.setDate(now.getDate() - ((day === 0 ? 7 : day) - 1));
   m.setHours(0,0,0,0);
   return m.getTime();
 }
-var THIS_MONDAY = getThisMonday();
 
-// Todas as tarefas da Isadora (Criação + Audiovisual), excluindo concluídas
-// e agendamentos de semanas anteriores
-var CRIACAO = [
-  {name:"Demanda extra - [AMICHE] - [ORÇAMENTO INFLUENCIADORAS]",status:"planejamento",url:"https://app.clickup.com/t/86ah1yrh5",priority:"high",due:1777446000000,list:"Amiche"},
-  {name:"Demanda extra - [ELOAH] - [ROTEIRO PARA VISITA 24/05]",status:"planejamento",url:"https://app.clickup.com/t/86ah1z2gg",priority:"high",due:1777014000000,list:"Eloah"},
-  {name:"Demanda extra - [JENNI PINK] - [FAZER AJUSTES APRESENTAÇÃO]",status:"planejamento",url:"https://app.clickup.com/t/86ah1yxf1",priority:"high",due:1777014000000,list:"Jenni Pink"},
-  {name:"Demanda extra - [JENNI PINK] - [ORÇAMENTO SHOOTING MATHEUS]",status:"planejamento",url:"https://app.clickup.com/t/86ah1yv9p",priority:"high",due:1777014000000,list:"Jenni Pink"},
-  {name:"Demanda extra - [ANDIRÁ] - [BANNER SITE VESTI]",status:"design",url:"https://app.clickup.com/t/86ah0uyk6",priority:"normal",due:1777014000000,list:"Andirá Jeans"},
-  {name:"Stories - [JENNI PINK] - [22/04 a 28/04]",status:"planejamento",url:"https://app.clickup.com/t/86agz81nu",priority:"normal",due:1777014000000,list:"Jenni Pink"},
-  {name:"Stories - [DOCE CAJU] - [22/04 a 28/04]",status:"design",url:"https://app.clickup.com/t/86agz81n9",priority:"normal",due:1777014000000,list:"Doce Caju"},
-  {name:"Stories - [ANDIRÁ JEANS] - [22/04 a 28/04]",status:"planejamento",url:"https://app.clickup.com/t/86agz81me",priority:"normal",due:1777014000000,list:"Andirá Jeans"},
-  {name:"Stories - [ELOAH] - [22/04 a 28/04]",status:"design",url:"https://app.clickup.com/t/86agz81m6",priority:"normal",due:1777014000000,list:"Eloah"},
-  {name:"Para trabalhar na semana - Andirá Jeans",status:"planejamento",url:"https://app.clickup.com/t/86agwuuac",priority:"normal",due:1777014000000,list:"Andirá Jeans"},
-  {name:"Demanda extra - [ANDIRÁ] - [VAGA VENDEDOR] - ISADORA POSTAR",status:"agendamento",url:"https://app.clickup.com/t/86agwrdjr",priority:null,due:1777014000000,list:"Andirá Jeans"},
-  {name:"Demanda extra - Eloah - Combo 3 por R$120 Paetê Forrado",status:"agendamento",url:"https://app.clickup.com/t/86agymthx",priority:null,due:1776409200000,list:"Eloah"},
-  {name:"Demanda extra - [AYA] - [Banner combo Day]",status:"agendamento",url:"https://app.clickup.com/t/86agwwgtp",priority:"normal",due:1776409200000,list:"AYA - Fitness"},
-  {name:"Demanda extra - [ANDIRÁ] - [artes]",status:"design",url:"https://app.clickup.com/t/86agwr8re",priority:null,due:1776409200000,list:"Andirá Jeans"},
-  {name:"Demanda extra - [AYA] - [artes]",status:"agendamento",url:"https://app.clickup.com/t/86agkpchn",priority:null,due:1776322800000,list:"AYA - Fitness"}
-].filter(function(t){
-  if(t.status==='agendamento' && t.due && t.due < THIS_MONDAY) return false;
-  return true;
-});
-
-var AUDIOVISUAL = [
-  {name:"CAPTAÇÃO + ADS - [FLORA MINHA] - [CAPTAÇÃO LOJA]",status:"planejamento",url:"https://app.clickup.com/t/86ah1xdt3",priority:"normal",due:1777359600000,isVisita:true},
-  {name:"Editorial - [TCHU.BI] - [CAMPANHA DIA DAS MAES - ROTEIRO 2]",status:"planejamento",url:"https://app.clickup.com/t/86ah1xavp",priority:"normal",due:1777273200000,isVisita:true},
-  {name:"Captação + Ads - [ELOAH] - [CONTEUDO IRANDRA E FABRICA]",status:"planejamento",url:"https://app.clickup.com/t/86ah1x8kj",priority:"high",due:1777014000000,isVisita:true},
-  {name:"Captação + Ads - [NAROMO] - [VISITA FABRICA PARA GERAR CONTEUDO]",status:"planejamento",url:"https://app.clickup.com/t/86ah1x661",priority:"normal",due:1776927600000,isVisita:true},
-  {name:"Editorial - [NAROMO] - [CONTEUDO PARA INSTAGRAM]",status:"para aprovação",url:"https://app.clickup.com/t/86agc961p",priority:"normal",due:1774508400000,isVisita:false},
-  {name:"Captação + Ads - [NAROMO] - [VISITA FABRICA 26/03]",status:"em alterações",url:"https://app.clickup.com/t/86agay15r",priority:"normal",due:null,isVisita:false}
-];
-
-var currentFilter='todos', weekOffset=0;
-
-function sClass(s){
-  if(!s) return 's-done';
-  if(s.includes('plan')) return 's-plan';
-  if(s.includes('design')) return 's-design';
-  if(s.includes('alter')||s.includes('aprova')) return 's-alt';
-  if(s.includes('agend')) return 's-ag';
+function sClass(s) {
+  if (!s) return 's-done';
+  if (s.includes('plan')) return 's-plan';
+  if (s.includes('design')) return 's-design';
+  if (s.includes('alter') || s.includes('aprova') || s.includes('edi')) return 's-alt';
+  if (s.includes('agend')) return 's-ag';
   return 's-done';
 }
-function sLabel(s){
-  if(!s) return '-';
-  if(s.includes('plan')) return 'planejamento';
-  if(s.includes('design')) return 'design';
-  if(s.includes('alter')) return 'alterações';
-  if(s.includes('agend')) return 'agendamento';
-  if(s.includes('aprova')) return 'em aprovação';
+
+function sLabel(s) {
+  if (!s) return '-';
+  if (s.includes('plan')) return 'planejamento';
+  if (s.includes('design')) return 'design';
+  if (s.includes('alter')) return 'alterações';
+  if (s.includes('edi')) return 'em edição';
+  if (s.includes('agend')) return 'agendamento';
+  if (s.includes('aprova')) return 'em aprovação';
   return s;
 }
-function fmtD(ms){ return ms ? new Date(ms).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : ''; }
 
-function getWeekDates(off){
-  var now=new Date(),day=now.getDay(),m=new Date(now);
-  m.setDate(now.getDate()-((day===0?7:day)-1)+(off*7));
+function fmtD(ms) { return ms ? new Date(ms).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : ''; }
+
+function getWeekDates(off) {
+  var now = new Date(), day = now.getDay(), m = new Date(now);
+  m.setDate(now.getDate() - ((day === 0 ? 7 : day) - 1) + (off * 7));
   m.setHours(0,0,0,0);
-  var days=[];
-  for(var i=0;i<5;i++){var d=new Date(m);d.setDate(m.getDate()+i);days.push(d);}
+  var days = [];
+  for (var i = 0; i < 5; i++) { var d = new Date(m); d.setDate(m.getDate()+i); days.push(d); }
   return days;
 }
 
-function renderStats(){
-  var plan=CRIACAO.filter(function(t){return t.status&&t.status.includes('plan');}).length;
-  var des=CRIACAO.filter(function(t){return t.status&&t.status.includes('design');}).length;
-  var urg=CRIACAO.filter(function(t){return t.priority==='urgent';}).length;
-  document.getElementById('s-total').textContent=CRIACAO.length;
-  document.getElementById('s-plan').textContent=plan;
-  document.getElementById('s-design').textContent=des;
-  document.getElementById('s-urgent').textContent=urg;
+/* ─── RENDER ─── */
+function renderStats() {
+  var plan = criacaoTasks.filter(function(t){return t.status&&t.status.includes('plan');}).length;
+  var des  = criacaoTasks.filter(function(t){return t.status&&t.status.includes('design');}).length;
+  var urg  = criacaoTasks.filter(function(t){return t.priority==='urgent';}).length;
+  document.getElementById('s-total').textContent  = criacaoTasks.length;
+  document.getElementById('s-plan').textContent   = plan;
+  document.getElementById('s-design').textContent = des;
+  document.getElementById('s-urgent').textContent = urg;
 }
 
-function renderWeek(){
-  var days=getWeekDates(weekOffset);
-  var today=new Date();today.setHours(0,0,0,0);
-  var opts={day:'2-digit',month:'short'};
-  document.getElementById('week-label').textContent=
-    days[0].toLocaleDateString('pt-BR',opts).toUpperCase()+' → '+days[4].toLocaleDateString('pt-BR',opts).toUpperCase();
-  var filtered=CRIACAO.filter(function(t){return currentFilter==='todos'||(t.status&&t.status.includes(currentFilter));});
-  var grid=document.getElementById('week-grid');
-  grid.innerHTML='';
+function renderWeek() {
+  var days = getWeekDates(weekOffset);
+  var today = new Date(); today.setHours(0,0,0,0);
+  var opts = {day:'2-digit',month:'short'};
+  document.getElementById('week-label').textContent =
+    days[0].toLocaleDateString('pt-BR',opts).toUpperCase() + ' → ' +
+    days[4].toLocaleDateString('pt-BR',opts).toUpperCase();
+
+  var filtered = criacaoTasks.filter(function(t){
+    return currentFilter==='todos'||(t.status&&t.status.includes(currentFilter));
+  });
+
+  var grid = document.getElementById('week-grid'); grid.innerHTML = '';
   ['SEG','TER','QUA','QUI','SEX'].forEach(function(dn,i){
-    var d=days[i],isToday=d.getTime()===today.getTime();
-    var dayTasks=filtered.filter(function(t){return t.due&&t.due>=d.getTime()&&t.due<=d.getTime()+86399999;});
-    var col=document.createElement('div');
-    col.className='day-col'+(isToday?' today':'');
-    var h='<div class="day-header"><span class="dnum">'+d.getDate()+'</span><span class="dname">'+dn+'</span>'+(isToday?'<br><span class="today-badge">HOJE</span>':'')+'</div>';
-    if(!dayTasks.length){h+='<div class="empty-day">—</div>';}
-    else{dayTasks.forEach(function(t){
-      var n=t.name.replace(/📝/g,'').trim().slice(0,45);
-      h+='<a class="task-chip" href="'+t.url+'" target="_blank" rel="noopener"><div>'+n+'</div><div style="margin-top:3px"><span class="chip-pill '+sClass(t.status)+'">'+sLabel(t.status)+'</span></div></a>';
-    });}
-    col.innerHTML=h;grid.appendChild(col);
+    var d = days[i], isToday = d.getTime()===today.getTime();
+    var dt = filtered.filter(function(t){return t.due&&t.due>=d.getTime()&&t.due<=d.getTime()+86399999;});
+    var col = document.createElement('div');
+    col.className = 'day-col'+(isToday?' today':'');
+    var h = '<div class="day-header"><span class="dnum">'+d.getDate()+'</span><span class="dname">'+dn+'</span>'+(isToday?'<br><span class="today-badge">HOJE</span>':'')+'</div>';
+    if (!dt.length) { h += '<div class="empty-day">—</div>'; }
+    else dt.forEach(function(t){
+      h += '<a class="task-chip" href="'+t.url+'" target="_blank" rel="noopener"><div>'+t.name.replace(/📝/g,'').trim().slice(0,46)+'</div><div style="margin-top:3px"><span class="chip-pill '+sClass(t.status)+'">'+sLabel(t.status)+'</span></div></a>';
+    });
+    col.innerHTML = h; grid.appendChild(col);
   });
 }
 
-function renderClients(){
-  var filtered=CRIACAO.filter(function(t){return currentFilter==='todos'||(t.status&&t.status.includes(currentFilter));});
-  var by={};
+function renderClients() {
+  var filtered = criacaoTasks.filter(function(t){
+    return currentFilter==='todos'||(t.status&&t.status.includes(currentFilter));
+  });
+  var by = {};
   filtered.forEach(function(t){if(!by[t.list])by[t.list]=[];by[t.list].push(t);});
-  var grid=document.getElementById('client-grid');grid.innerHTML='';
-  if(!Object.keys(by).length){grid.innerHTML='<div style="font-size:11px;color:var(--gray);padding:1rem;">Nenhuma tarefa para este filtro.</div>';return;}
+  var grid = document.getElementById('client-grid'); grid.innerHTML = '';
+  if (!Object.keys(by).length) {
+    grid.innerHTML = '<div style="font-size:11px;color:var(--gray);padding:1rem;">Nenhuma tarefa para este filtro.</div>';
+    return;
+  }
   Object.entries(by).sort(function(a,b){return a[0].localeCompare(b[0]);}).forEach(function(e){
-    var card=document.createElement('div');card.className='client-card';
-    var h='<div class="client-name">'+e[0]+'</div>';
+    var card = document.createElement('div'); card.className = 'client-card';
+    var h = '<div class="client-name">'+e[0]+'</div>';
     e[1].slice(0,6).forEach(function(t){
-      var n=t.name.replace(/📝/g,'').trim().slice(0,50);
-      h+='<a class="task-row" href="'+t.url+'" target="_blank" rel="noopener"><div>'+n+'</div><div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px"><span class="chip-pill '+sClass(t.status)+'">'+sLabel(t.status)+'</span><span class="due">'+fmtD(t.due)+'</span></div></a>';
+      h += '<a class="task-row" href="'+t.url+'" target="_blank" rel="noopener"><div>'+t.name.replace(/📝/g,'').trim().slice(0,50)+'</div><div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px"><span class="chip-pill '+sClass(t.status)+'">'+sLabel(t.status)+'</span><span class="due">'+fmtD(t.due)+'</span></div></a>';
     });
-    if(e[1].length>6)h+='<div style="font-size:10px;color:var(--gray2);padding-top:4px">+'+(e[1].length-6)+' mais</div>';
-    card.innerHTML=h;grid.appendChild(card);
+    if (e[1].length>6) h += '<div style="font-size:10px;color:var(--gray2);padding-top:4px">+'+(e[1].length-6)+' mais</div>';
+    card.innerHTML = h; grid.appendChild(card);
   });
 }
 
-function renderAV(){
-  var kw=['visita','captação','captacao','editorial','roteiro','shooting'];
-  var vis=AUDIOVISUAL.filter(function(t){return t.isVisita;}).sort(function(a,b){return(a.due||0)-(b.due||0);});
-  var out=AUDIOVISUAL.filter(function(t){return!t.isVisita;});
-  var vl=document.getElementById('visitas-list');vl.innerHTML='';
-  if(!vis.length){vl.innerHTML='<div style="font-size:11px;color:var(--gray);">Nenhuma visita registrada.</div>';}
-  else{vis.forEach(function(t){
-    var c=(t.name.match(/\[(.*?)\]/)||[])[1]||t.list;
-    var cn=t.name.replace(/\[.*?\]/g,'').replace(/📝/g,'').trim();
-    var hi=t.priority==='high'||t.priority==='urgent';
-    vl.innerHTML+='<a class="visita-card'+(hi?' high':'')+'" href="'+t.url+'" target="_blank" rel="noopener">'+
-      '<div class="visita-icon"><svg viewBox="0 0 16 16"><path d="M8 0C5.2 0 3 2.2 3 5c0 4 5 11 5 11s5-7 5-11c0-2.8-2.2-5-5-5zm0 7c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg></div>'+
-      '<div><div class="vi-client">'+c+'</div><div class="vi-task">'+cn+'</div>'+
-      '<div class="vi-due">'+(t.due?'Prazo: '+fmtD(t.due):'Sem prazo definido')+
-      ' <span class="chip-pill s-plan">'+sLabel(t.status)+'</span>'+(hi?' <span class="chip-pill s-alt">alta prioridade</span>':'')+
-      '</div></div></a>';
-  });}
-  var ag=document.getElementById('av-grid');ag.innerHTML='';
-  if(out.length){
-    var card=document.createElement('div');card.className='client-card';
-    var h='<div class="client-name">Em andamento</div>';
-    out.forEach(function(t){
-      var n=t.name.replace(/📝/g,'').trim().slice(0,50);
-      h+='<a class="task-row" href="'+t.url+'" target="_blank" rel="noopener"><div>'+n+'</div><div style="margin-top:2px"><span class="chip-pill '+sClass(t.status)+'">'+sLabel(t.status)+'</span></div></a>';
+function renderAV() {
+  var visitas = avTasks.filter(function(t){return VISITA_KW.some(function(k){return t.name.toLowerCase().includes(k);});}).sort(function(a,b){return(a.due||0)-(b.due||0);});
+  var outros  = avTasks.filter(function(t){return !VISITA_KW.some(function(k){return t.name.toLowerCase().includes(k);});});
+
+  var vl = document.getElementById('visitas-list'); vl.innerHTML = '';
+  if (!visitas.length) {
+    vl.innerHTML = '<div style="font-size:11px;color:var(--gray);">Nenhuma visita registrada.</div>';
+  } else {
+    visitas.forEach(function(t){
+      var c = (t.name.match(/\[(.*?)\]/)||[])[1]||t.list;
+      var cn = t.name.replace(/\[.*?\]/g,'').replace(/📝/g,'').trim();
+      var hi = t.priority==='high'||t.priority==='urgent';
+      vl.innerHTML += '<a class="visita-card'+(hi?' high':'')+'" href="'+t.url+'" target="_blank" rel="noopener">'+
+        '<div class="visita-icon"><svg viewBox="0 0 16 16"><path d="M8 0C5.2 0 3 2.2 3 5c0 4 5 11 5 11s5-7 5-11c0-2.8-2.2-5-5-5zm0 7c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg></div>'+
+        '<div><div class="vi-client">'+c+'</div><div class="vi-task">'+cn+'</div>'+
+        '<div class="vi-due">'+(t.due?'Prazo: '+fmtD(t.due):'Sem prazo')+
+        ' <span class="chip-pill s-plan">'+sLabel(t.status)+'</span>'+
+        (hi?' <span class="chip-pill s-alt">alta prioridade</span>':'')+
+        '</div></div></a>';
     });
-    card.innerHTML=h;ag.appendChild(card);
+  }
+
+  var ag = document.getElementById('av-grid'); ag.innerHTML = '';
+  if (outros.length) {
+    var card = document.createElement('div'); card.className = 'client-card';
+    var h = '<div class="client-name">Em andamento</div>';
+    outros.forEach(function(t){
+      h += '<a class="task-row" href="'+t.url+'" target="_blank" rel="noopener"><div>'+t.name.replace(/📝/g,'').trim().slice(0,50)+'</div><div style="margin-top:2px"><span class="chip-pill '+sClass(t.status)+'">'+sLabel(t.status)+'</span></div></a>';
+    });
+    card.innerHTML = h; ag.appendChild(card);
   }
 }
 
-function switchTab(tab,el){
+function switchTab(tab,el) {
   document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('active');});
   document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
-  el.classList.add('active');document.getElementById(tab).classList.add('active');
+  el.classList.add('active'); document.getElementById(tab).classList.add('active');
 }
-function setFilter(f,el){
+
+function setFilter(f,el) {
   document.querySelectorAll('.fbtn').forEach(function(b){b.classList.remove('active');});
-  el.classList.add('active');currentFilter=f;renderWeek();renderClients();
+  el.classList.add('active'); currentFilter=f; renderWeek(); renderClients();
 }
+
 function prevWeek(){weekOffset--;renderWeek();}
 function nextWeek(){weekOffset++;renderWeek();}
-
-renderStats();renderWeek();renderClients();renderAV();
 </script>
 </body>
 </html>
