@@ -1,0 +1,384 @@
+name: Atualizar Dashboard Isadora
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'  # a cada 3 horas
+  workflow_dispatch:        # botão manual na aba Actions
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Buscar tarefas do ClickUp e gerar index.html
+        env:
+          CLICKUP_TOKEN: ${{ secrets.CLICKUP_TOKEN }}
+        run: |
+          python3 << 'EOF'
+import urllib.request, json, os, datetime
+
+TOKEN = os.environ['CLICKUP_TOKEN']
+ISADORA_ID = '112051789'
+FOLDER_CRIACAO = '901316459074'
+FOLDER_AV = '901316459013'
+
+def fetch_tasks(folder_id):
+    all_tasks = []
+    page = 0
+    while True:
+        url = f'https://api.clickup.com/api/v2/folder/{folder_id}/task?assignees[]={ISADORA_ID}&include_closed=false&subtasks=false&order_by=due_date&page={page}'
+        req = urllib.request.Request(url, headers={'Authorization': TOKEN})
+        with urllib.request.urlopen(req) as r:
+            data = json.loads(r.read())
+        all_tasks.extend(data.get('tasks', []))
+        if data.get('last_page', True):
+            break
+        page += 1
+    return all_tasks
+
+def get_this_monday_ms():
+    today = datetime.date.today()
+    monday = today - datetime.timedelta(days=today.weekday())
+    dt = datetime.datetime.combine(monday, datetime.time.min)
+    return int(dt.timestamp() * 1000)
+
+THIS_MONDAY = get_this_monday_ms()
+
+raw_criacao = fetch_tasks(FOLDER_CRIACAO)
+raw_av = fetch_tasks(FOLDER_AV)
+
+DONE = {'concluído', 'aprovado', 'templates'}
+VISITA_KW = ['visita','captação','captacao','editorial','roteiro','shooting']
+
+criacao = []
+for t in raw_criacao:
+    s = t['status']['status']
+    if s in DONE: continue
+    due = int(t['due_date']) if t.get('due_date') else None
+    if s == 'agendamento' and due and due < THIS_MONDAY: continue
+    criacao.append({
+        'name': t['name'],
+        'status': s,
+        'url': t['url'],
+        'priority': t['priority']['priority'] if t.get('priority') else None,
+        'due': due,
+        'list': t['list']['name']
+    })
+
+av_visitas = []
+av_outros = []
+for t in raw_av:
+    s = t['status']['status']
+    if s in DONE: continue
+    due = int(t['due_date']) if t.get('due_date') else None
+    obj = {
+        'name': t['name'],
+        'status': s,
+        'url': t['url'],
+        'priority': t['priority']['priority'] if t.get('priority') else None,
+        'due': due
+    }
+    if any(k in t['name'].lower() for k in VISITA_KW):
+        av_visitas.append(obj)
+    else:
+        av_outros.append(obj)
+
+av_visitas.sort(key=lambda x: x['due'] or 0)
+
+updated = datetime.datetime.now().strftime('%d/%m/%Y às %H:%Mh')
+
+criacao_js = json.dumps(criacao, ensure_ascii=False)
+av_visitas_js = json.dumps(av_visitas, ensure_ascii=False)
+av_outros_js = json.dumps(av_outros, ensure_ascii=False)
+
+html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Isadora — Dua Criativa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{{
+  --black:#080808;--black2:#101010;--black3:#181818;--black4:#222222;
+  --yellow:#F5E642;--yellow2:#DFCE1A;--purple:#7C3AED;
+  --white:#F5F5F0;--gray:#888884;--gray2:#444440;
+  --ok:#22C55E;--ok-d:rgba(34,197,94,.10);
+  --warn:#F59E0B;--warn-d:rgba(245,158,11,.10);
+  --danger:#EF4444;--danger-d:rgba(239,68,68,.10);
+  --info:#60A5FA;--info-d:rgba(96,165,250,.10);
+  --teal:#2DD4BF;--teal-d:rgba(45,212,191,.10);
+  --fd:'Bebas Neue',sans-serif;--fb:'Inter',sans-serif;
+  --br:rgba(255,255,255,.06);--br2:rgba(255,255,255,.14);
+  --r:10px;--g:14px;
+}}
+*,*::before,*::after{{margin:0;padding:0;box-sizing:border-box}}
+html{{font-size:16px;-webkit-text-size-adjust:100%}}
+body{{background:var(--black);color:var(--white);font-family:var(--fb);min-height:100dvh;overflow-x:hidden}}
+body::after{{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 80% 0%,rgba(124,58,237,.07) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 20% 100%,rgba(245,230,66,.04) 0%,transparent 60%);pointer-events:none;z-index:0}}
+.page{{position:relative;z-index:1;width:100%;max-width:1800px;margin:0 auto;padding:20px 20px 28px}}
+.hdr{{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;padding-bottom:18px;border-bottom:1px solid var(--br);margin-bottom:20px}}
+.brand{{display:flex;align-items:center;gap:10px;flex-shrink:0}}
+.logo{{font-family:var(--fd);font-size:30px;letter-spacing:.04em;line-height:1}}
+.logo em{{color:var(--yellow);font-style:normal}}
+.tag{{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray);border-left:1px solid var(--gray2);padding-left:10px;line-height:1.5}}
+.hdr-mid{{display:flex;align-items:center;justify-content:center;gap:12px}}
+.avatar{{width:38px;height:38px;border-radius:50%;background:rgba(124,58,237,.25);border:1px solid var(--purple);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:16px;color:var(--yellow);flex-shrink:0}}
+.uname{{font-size:15px;font-weight:600;color:var(--white)}}
+.urole{{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray)}}
+.hdr-right{{display:flex;align-items:center;gap:10px;flex-shrink:0}}
+.btn{{display:inline-flex;align-items:center;gap:6px;font-family:var(--fb);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:9px 16px;border-radius:6px;border:none;cursor:pointer;transition:all .18s;white-space:nowrap;text-decoration:none}}
+.btn-y{{background:var(--yellow);color:var(--black)}}
+.btn-y:hover{{background:var(--yellow2);transform:translateY(-1px)}}
+.tabs{{display:flex;gap:4px;margin-bottom:20px}}
+.tab{{padding:7px 18px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:1px solid var(--br2);background:none;color:var(--gray);font-family:var(--fb);transition:all .15s}}
+.tab.active{{background:var(--yellow);border-color:var(--yellow);color:var(--black)}}
+.tab:hover:not(.active){{border-color:var(--white);color:var(--white)}}
+.section{{display:none}}.section.active{{display:block}}
+.stats{{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--g);margin-bottom:var(--g)}}
+.sc{{background:var(--black2);border:1px solid var(--br);border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden}}
+.sc::before{{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r) var(--r) 0 0}}
+.sc.ok::before{{background:var(--ok)}}.sc.wn::before{{background:var(--warn)}}.sc.in::before{{background:var(--info)}}.sc.br::before{{background:var(--yellow)}}.sc.rd::before{{background:var(--danger)}}
+.sn{{font-family:var(--fd);font-size:44px;letter-spacing:.02em;line-height:1;margin-bottom:4px}}
+.sc.ok .sn{{color:var(--ok)}}.sc.wn .sn{{color:var(--warn)}}.sc.in .sn{{color:var(--info)}}.sc.br .sn{{color:var(--yellow)}}.sc.rd .sn{{color:var(--danger)}}
+.sl{{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);font-weight:500}}
+.filter-row{{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}}
+.flbl{{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin-right:4px}}
+.fbtn{{padding:4px 12px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border:1px solid var(--br2);background:none;color:var(--gray);font-family:var(--fb);transition:all .15s}}
+.fbtn.active{{background:var(--yellow);border-color:var(--yellow);color:var(--black)}}
+.fbtn:hover:not(.active){{border-color:var(--white);color:var(--white)}}
+.week-nav-row{{display:flex;align-items:center;gap:10px;margin-bottom:14px}}
+.wnbtn{{background:none;border:1px solid var(--br2);color:var(--gray);font-size:16px;width:30px;height:30px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}}
+.wnbtn:hover{{background:var(--black3);color:var(--white);border-color:var(--yellow)}}
+.wlbl{{font-family:var(--fd);font-size:17px;letter-spacing:.06em;color:var(--white);flex:1;text-align:center}}
+.week-grid{{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}}
+.day-col{{background:var(--black2);border:1px solid var(--br);border-radius:var(--r);padding:10px 8px;min-height:90px}}
+.day-col.today{{border-color:var(--yellow)}}
+.day-header{{text-align:center;margin-bottom:8px}}
+.dnum{{font-family:var(--fd);font-size:22px;letter-spacing:.02em;color:var(--white);display:block;line-height:1}}
+.dname{{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}}
+.today-badge{{font-size:9px;background:var(--yellow);color:var(--black);border-radius:10px;padding:1px 6px;font-weight:700;letter-spacing:.04em;display:inline-block;margin-top:2px}}
+.task-chip{{background:var(--black3);border:1px solid var(--br);border-radius:6px;padding:5px 7px;font-size:10px;color:var(--white);margin-bottom:4px;line-height:1.3;transition:border-color .15s;text-decoration:none;display:block}}
+.task-chip:hover{{border-color:var(--yellow)}}
+.chip-pill{{display:inline-block;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}}
+.s-plan{{background:var(--info-d);color:var(--info)}}
+.s-design{{background:var(--warn-d);color:#FCD34D}}
+.s-alt{{background:var(--danger-d);color:#FCA5A5}}
+.s-ag{{background:var(--ok-d);color:#86efac}}
+.s-done{{background:rgba(255,255,255,.05);color:var(--gray)}}
+.empty-day{{font-size:10px;color:var(--gray2);text-align:center;padding:8px 0}}
+.section-eyebrow{{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:10px}}
+.client-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--g);margin-bottom:20px}}
+.client-card{{background:var(--black2);border:1px solid var(--br);border-radius:var(--r);padding:14px;transition:border-color .18s}}
+.client-card:hover{{border-color:var(--br2)}}
+.client-name{{font-size:11px;font-weight:700;color:var(--yellow);margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase}}
+.task-row{{font-size:11px;color:var(--gray);padding:5px 0;border-bottom:1px solid var(--br);line-height:1.4;transition:color .15s;text-decoration:none;display:block}}
+.task-row:last-of-type{{border-bottom:none}}
+.task-row:hover{{color:var(--white)}}
+.due{{font-size:10px;color:var(--gray2)}}
+.cal-title{{font-family:var(--fd);font-size:22px;letter-spacing:.04em;color:var(--white);margin-bottom:12px}}
+.visita-card{{background:var(--black2);border:1px solid rgba(45,212,191,.25);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px;transition:border-color .15s;text-decoration:none}}
+.visita-card:hover{{border-color:var(--teal)}}
+.visita-card.high{{border-color:rgba(245,158,11,.35)}}
+.visita-card.high:hover{{border-color:var(--warn)}}
+.visita-icon{{width:32px;height:32px;border-radius:8px;background:var(--teal-d);border:1px solid rgba(45,212,191,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0}}
+.visita-card.high .visita-icon{{background:var(--warn-d);border-color:rgba(245,158,11,.3)}}
+.visita-icon svg{{width:14px;height:14px;fill:var(--teal)}}
+.visita-card.high .visita-icon svg{{fill:var(--warn)}}
+.vi-client{{font-size:12px;font-weight:700;color:var(--white);letter-spacing:.04em;text-transform:uppercase}}
+.vi-task{{font-size:11px;color:var(--gray);margin-top:3px;line-height:1.4}}
+.vi-due{{font-size:10px;color:var(--gray2);margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}}
+.footer{{margin-top:22px;padding-top:14px;border-top:1px solid var(--br);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:10px;letter-spacing:.04em;color:var(--gray2)}}
+.pdot{{display:inline-block;width:5px;height:5px;background:var(--ok);border-radius:50%;margin-right:5px;vertical-align:middle;animation:pa 2s ease infinite}}
+@keyframes pa{{0%,100%{{opacity:1;transform:scale(1)}}50%{{opacity:.35;transform:scale(.7)}}}}
+@media(max-width:960px){{.week-grid{{grid-template-columns:repeat(3,1fr)}}.stats{{grid-template-columns:repeat(2,1fr)}}.hdr{{grid-template-columns:auto auto}}.hdr-mid{{display:none}}}}
+@media(max-width:600px){{.page{{padding:14px 14px 24px}}:root{{--g:10px}}.hdr{{grid-template-columns:1fr auto;margin-bottom:14px}}.tag{{display:none}}.logo{{font-size:24px}}.btn{{padding:8px 12px;font-size:10px}}.stats{{grid-template-columns:repeat(2,1fr)}}.sc{{padding:12px 14px}}.sn{{font-size:34px}}.week-grid{{grid-template-columns:repeat(2,1fr)}}.client-grid{{grid-template-columns:1fr}}}}
+@media(min-width:1600px){{.page{{padding:28px 48px 36px}}:root{{--g:18px}}.logo{{font-size:36px}}.sn{{font-size:52px}}.sc{{padding:20px 24px}}.client-grid{{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}}}}
+</style>
+</head>
+<body>
+<main class="page">
+<header class="hdr">
+  <div class="brand">
+    <div class="logo">DUA<em>.</em></div>
+    <div class="tag">Marketing<br>de Moda</div>
+  </div>
+  <div class="hdr-mid">
+    <div class="avatar">IC</div>
+    <div>
+      <div class="uname">Isadora Coelho</div>
+      <div class="urole">Conteudista &amp; Social Media</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <a class="btn btn-y" href="https://github.com/duacriativa/Isadora/actions/workflows/update.yml" target="_blank" rel="noopener">Atualizar ↗</a>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('criacao',this)">Criação</button>
+  <button class="tab" onclick="switchTab('audiovisual',this)">Audiovisual &amp; Visitas</button>
+</div>
+
+<div id="criacao" class="section active">
+  <div class="stats">
+    <div class="sc br"><div class="sn" id="s-total">—</div><div class="sl">Total</div></div>
+    <div class="sc in"><div class="sn" id="s-plan">—</div><div class="sl">Planejamento</div></div>
+    <div class="sc wn"><div class="sn" id="s-design">—</div><div class="sl">Em design</div></div>
+    <div class="sc rd"><div class="sn" id="s-urgent">—</div><div class="sl">Urgentes</div></div>
+  </div>
+  <div class="filter-row">
+    <span class="flbl">Filtrar:</span>
+    <button class="fbtn active" onclick="setFilter('todos',this)">Todos</button>
+    <button class="fbtn" onclick="setFilter('planejamento',this)">Planejamento</button>
+    <button class="fbtn" onclick="setFilter('design',this)">Design</button>
+    <button class="fbtn" onclick="setFilter('alterações',this)">Em alterações</button>
+    <button class="fbtn" onclick="setFilter('agendamento',this)">Agendamento</button>
+  </div>
+  <div class="week-nav-row">
+    <button class="wnbtn" onclick="prevWeek()">&#8249;</button>
+    <div class="wlbl" id="week-label"></div>
+    <button class="wnbtn" onclick="nextWeek()">&#8250;</button>
+  </div>
+  <div class="week-grid" id="week-grid"></div>
+  <div class="section-eyebrow">Por cliente</div>
+  <div class="client-grid" id="client-grid"></div>
+</div>
+
+<div id="audiovisual" class="section">
+  <div style="margin-bottom:20px">
+    <div class="cal-title">Visitas e Captações</div>
+    <div id="visitas-list"></div>
+  </div>
+  <div class="section-eyebrow">Outras demandas audiovisual</div>
+  <div class="client-grid" id="av-grid"></div>
+</div>
+
+<footer class="footer">
+  <span><span class="pdot"></span>Dua Criativa &copy; 2026 &mdash; Isadora Coelho Cosmo</span>
+  <span>Atualizado em {updated}</span>
+</footer>
+</main>
+<script>
+var CRIACAO={criacao_js};
+var AV_VISITAS={av_visitas_js};
+var AV_OUTROS={av_outros_js};
+var currentFilter='todos',weekOffset=0;
+
+function sClass(s){{
+  if(!s)return 's-done';
+  if(s.includes('plan'))return 's-plan';
+  if(s.includes('design'))return 's-design';
+  if(s.includes('alter')||s.includes('aprova')||s.includes('edi'))return 's-alt';
+  if(s.includes('agend'))return 's-ag';
+  return 's-done';
+}}
+function sLabel(s){{
+  if(!s)return '-';
+  if(s.includes('plan'))return 'planejamento';
+  if(s.includes('design'))return 'design';
+  if(s.includes('alter'))return 'alterações';
+  if(s.includes('edi'))return 'em edição';
+  if(s.includes('agend'))return 'agendamento';
+  if(s.includes('aprova'))return 'em aprovação';
+  return s;
+}}
+function fmtD(ms){{return ms?new Date(ms).toLocaleDateString('pt-BR',{{day:'2-digit',month:'2-digit'}}):'';}}
+function getWeekDates(off){{
+  var now=new Date(),day=now.getDay(),m=new Date(now);
+  m.setDate(now.getDate()-((day===0?7:day)-1)+(off*7));m.setHours(0,0,0,0);
+  var days=[];for(var i=0;i<5;i++){{var d=new Date(m);d.setDate(m.getDate()+i);days.push(d);}}
+  return days;
+}}
+function renderStats(){{
+  var plan=CRIACAO.filter(function(t){{return t.status&&t.status.includes('plan');}}).length;
+  var des=CRIACAO.filter(function(t){{return t.status&&t.status.includes('design');}}).length;
+  var urg=CRIACAO.filter(function(t){{return t.priority==='urgent';}}).length;
+  document.getElementById('s-total').textContent=CRIACAO.length;
+  document.getElementById('s-plan').textContent=plan;
+  document.getElementById('s-design').textContent=des;
+  document.getElementById('s-urgent').textContent=urg;
+}}
+function renderWeek(){{
+  var days=getWeekDates(weekOffset);
+  var today=new Date();today.setHours(0,0,0,0);
+  var opts={{day:'2-digit',month:'short'}};
+  document.getElementById('week-label').textContent=days[0].toLocaleDateString('pt-BR',opts).toUpperCase()+' → '+days[4].toLocaleDateString('pt-BR',opts).toUpperCase();
+  var filtered=CRIACAO.filter(function(t){{return currentFilter==='todos'||(t.status&&t.status.includes(currentFilter));}});
+  var grid=document.getElementById('week-grid');grid.innerHTML='';
+  ['SEG','TER','QUA','QUI','SEX'].forEach(function(dn,i){{
+    var d=days[i],isToday=d.getTime()===today.getTime();
+    var dt=filtered.filter(function(t){{return t.due&&t.due>=d.getTime()&&t.due<=d.getTime()+86399999;}});
+    var col=document.createElement('div');col.className='day-col'+(isToday?' today':'');
+    var h='<div class="day-header"><span class="dnum">'+d.getDate()+'</span><span class="dname">'+dn+'</span>'+(isToday?'<br><span class="today-badge">HOJE</span>':'')+'</div>';
+    if(!dt.length){{h+='<div class="empty-day">—</div>';}}
+    else dt.forEach(function(t){{
+      h+='<a class="task-chip" href="'+t.url+'" target="_blank" rel="noopener"><div>'+t.name.replace(/📝/g,'').trim().slice(0,46)+'</div><div style="margin-top:3px"><span class="chip-pill '+sClass(t.status)+'">'+sLabel(t.status)+'</span></div></a>';
+    }});
+    col.innerHTML=h;grid.appendChild(col);
+  }});
+}}
+function renderClients(){{
+  var filtered=CRIACAO.filter(function(t){{return currentFilter==='todos'||(t.status&&t.status.includes(currentFilter));}});
+  var by={{}};filtered.forEach(function(t){{if(!by[t.list])by[t.list]=[];by[t.list].push(t);}});
+  var grid=document.getElementById('client-grid');grid.innerHTML='';
+  if(!Object.keys(by).length){{grid.innerHTML='<div style="font-size:11px;color:var(--gray);padding:1rem;">Nenhuma tarefa para este filtro.</div>';return;}}
+  Object.entries(by).sort(function(a,b){{return a[0].localeCompare(b[0]);}}).forEach(function(e){{
+    var card=document.createElement('div');card.className='client-card';
+    var h='<div class="client-name">'+e[0]+'</div>';
+    e[1].slice(0,6).forEach(function(t){{
+      h+='<a class="task-row" href="'+t.url+'" target="_blank" rel="noopener"><div>'+t.name.replace(/📝/g,'').trim().slice(0,50)+'</div><div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px"><span class="chip-pill '+sClass(t.status)+'">'+sLabel(t.status)+'</span><span class="due">'+fmtD(t.due)+'</span></div></a>';
+    }});
+    if(e[1].length>6)h+='<div style="font-size:10px;color:var(--gray2);padding-top:4px">+'+(e[1].length-6)+' mais</div>';
+    card.innerHTML=h;grid.appendChild(card);
+  }});
+}}
+function renderAV(){{
+  var vl=document.getElementById('visitas-list');vl.innerHTML='';
+  if(!AV_VISITAS.length){{vl.innerHTML='<div style="font-size:11px;color:var(--gray);">Nenhuma visita registrada.</div>';}}
+  else AV_VISITAS.forEach(function(t){{
+    var c=(t.name.match(/\\[(.*?)\\]/)||[])[1]||'';
+    var cn=t.name.replace(/\\[.*?\\]/g,'').replace(/📝/g,'').trim();
+    var hi=t.priority==='high'||t.priority==='urgent';
+    vl.innerHTML+='<a class="visita-card'+(hi?' high':'')+'" href="'+t.url+'" target="_blank" rel="noopener"><div class="visita-icon"><svg viewBox="0 0 16 16"><path d="M8 0C5.2 0 3 2.2 3 5c0 4 5 11 5 11s5-7 5-11c0-2.8-2.2-5-5-5zm0 7c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg></div><div><div class="vi-client">'+c+'</div><div class="vi-task">'+cn+'</div><div class="vi-due">'+(t.due?'Prazo: '+fmtD(t.due):'Sem prazo')+' <span class="chip-pill s-plan">'+sLabel(t.status)+'</span>'+(hi?' <span class="chip-pill s-alt">alta prioridade</span>':'')+' </div></div></a>';
+  }});
+  var ag=document.getElementById('av-grid');ag.innerHTML='';
+  if(AV_OUTROS.length){{
+    var card=document.createElement('div');card.className='client-card';
+    var h='<div class="client-name">Em andamento</div>';
+    AV_OUTROS.forEach(function(t){{h+='<a class="task-row" href="'+t.url+'" target="_blank" rel="noopener"><div>'+t.name.replace(/📝/g,'').trim().slice(0,50)+'</div><div style="margin-top:2px"><span class="chip-pill '+sClass(t.status)+'">'+sLabel(t.status)+'</span></div></a>';}});
+    card.innerHTML=h;ag.appendChild(card);
+  }}
+}}
+function switchTab(tab,el){{
+  document.querySelectorAll('.tab').forEach(function(b){{b.classList.remove('active');}});
+  document.querySelectorAll('.section').forEach(function(s){{s.classList.remove('active');}});
+  el.classList.add('active');document.getElementById(tab).classList.add('active');
+}}
+function setFilter(f,el){{
+  document.querySelectorAll('.fbtn').forEach(function(b){{b.classList.remove('active');}});
+  el.classList.add('active');currentFilter=f;renderWeek();renderClients();
+}}
+function prevWeek(){{weekOffset--;renderWeek();}}
+function nextWeek(){{weekOffset++;renderWeek();}}
+renderStats();renderWeek();renderClients();renderAV();
+</script>
+</body>
+</html>"""
+
+with open('index.html', 'w', encoding='utf-8') as f:
+    f.write(html)
+
+print("index.html gerado com sucesso!")
+EOF
+
+      - name: Commit e push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --staged --quiet || git commit -m "Dashboard atualizado automaticamente"
+          git push
